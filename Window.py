@@ -1,16 +1,25 @@
 import sys
+import json
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from P2PNode import P2PNode
 
 class Window(QMainWindow):
-    def __init__(self):
+    def __init__(self, host='localhost', port=5000):
         super().__init__()
+        #Initialises stored IP and port variables
+        self.host = host
+        self.port = port
+
         #Creates a blank white canvas window
         self.setWindowTitle("Massive Whiteboard")
         self.setGeometry(100, 100, 1080, 720)
         self.image = QImage(self.size(), QImage.Format_RGB32)
         self.image.fill(Qt.white)
+
+        #Uses stored host and port variables to create a peer to peer node
+        self.P2PNode = P2PNode(self.host, self.port, self)
 
         #Sets default drawing tool to a 4 pixel size black brush
         self.drawing = False
@@ -26,6 +35,7 @@ class Window(QMainWindow):
         bSize = mainMenu.addMenu("Size")
         bColor = mainMenu.addMenu("Color")
         textTool = mainMenu.addMenu("Text") #TODO: fully implement this feature
+        connections = mainMenu.addMenu("Connections")
 
         smallBrush = QAction("Small", self)
         bSize.addAction(smallBrush)
@@ -69,6 +79,10 @@ class Window(QMainWindow):
 
         #TODO: add color wheel?
 
+        manage = QAction("Manage Connections", self)
+        connections.addAction(manage)
+        manage.triggered.connect(self.manageConnections)
+
     def mousePressEvent(self, event):
 
         if event.button() == Qt.LeftButton:
@@ -93,6 +107,64 @@ class Window(QMainWindow):
         canvasPaint = QPainter(self)
         canvasPaint.drawImage(self.rect(), self.image, self.image.rect())
 
+    def drawUpdate(self, event):
+        """
+        Updates the drawing based on what the other node sends. e.g. If one node
+        user draws a line, that line will appear on the other program
+        """
+        paintBrush = QPainter(self.image)
+        pen = QPen()
+        # pen.setWidth(self.bSize) #FIXME: for some reason the program doesn't
+                                   #FIXME: play nicely with width
+        pen.setStyle(Qt.SolidLine)
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+        try:
+            if self.bColor == Qt.black:
+                pen.setColor(Qt.black)
+            elif self.bColor == Qt.white:
+                pen.setColor(Qt.white)
+            elif self.bColor == Qt.red:
+                pen.setColor(Qt.red)
+            elif self.bColor == Qt.green:
+                pen.setColor(Qt.green)
+            elif self.bColor == Qt.blue:
+                pen.setColor(Qt.blue)
+        except Exception as e:
+            print(e)
+        paintBrush.setPen(pen)
+        paintBrush.drawLine(self.lastPoint, event.pos())
+        self.lastPoint = event.pos()
+        self.update()
+
+    def makeJson(self):
+        return json.dumps({'x': self.lastPoint.x(), 'y': self.lastPoint.y(),
+                           'color': self.bColor, 'size': self.bSize})
+
+    def jsonPaint(self, json_dict):
+        local_point_x = self.lastPoint.x()
+        local_point_y = self.lastPoint.y()
+        local_color = self.bColor
+        local_size = self.bSize
+        self.lastPoint = QPoint(json_dict['x'], json_dict['y'])
+        self.bColor = json_dict['color']
+        self.bSize = int(json_dict['size'])
+        self.drawUpdate(QMouseEvent(
+            QEvent.MouseButtonRelease,
+            self.lastPoint,
+            Qt.LeftButton,
+            Qt.NoModifier))
+        self.bColor = local_color
+        self.bSize = local_size
+        self.lastPoint = QPoint(local_point_x, local_point_y)
+
+    def updateClient(self, json_dict=None):
+        if json_dict:
+            self.jsonPaint(json_dict)
+
+    def updatePeers(self):
+        self.P2PNode.send_to_nodes(self.makeJson())
+
     def save(self):
         #TODO: Autosave feature?
         filePath, _ = QFileDialog.getSaveFileName(self, "Save Image", "",
@@ -111,10 +183,13 @@ class Window(QMainWindow):
         self.bSize = 10
 
     def TNRText(self):
-        ## TODO:
+        raise NotImplementedError("ToDo")
+        # TODO:
+
 
     def SansText(self):
-        ### TODO: 
+        raise NotImplementedError("ToDo")
+        # TODO:
 
     #TODO: textbox stuff goes here
 
@@ -132,6 +207,12 @@ class Window(QMainWindow):
 
     def blueB(self):
         self.bColor = Qt.blue
+
+    def manageConnections(self):
+        target, success = QInputDialog.getText(self, 'IP Address input Dialog',
+                                               'Enter target (format: 192.168.0.1:5000)')
+        ip, port = target.split(":")
+        self.P2PNode.connect_with_node(ip, int(port))
 
 if __name__ == "__main__":
 
