@@ -19,8 +19,9 @@ class testP2PNode(unittest.TestCase):
         #node2.start()
 
         time.sleep(1)
-        #assert node1.connect_with_node("localhost", 8888)
-        if(node1.connect_with_node("localhost", 8888)):
+        node1.connect_with_node("localhost", 8888)
+        time.sleep(1)
+        if(len(node1.nodes_outbound)==1):
             node1.stop()
             node2.stop()
             assert True
@@ -39,7 +40,9 @@ class testP2PNode(unittest.TestCase):
         node1.connect_with_node("localhost", 8888)
         time.sleep(1)
 
-        if(node1.disconnect_with_node(node2)):
+        node1.disconnect_with_node(node2)
+        time.sleep(1)
+        if(len(node1.nodes_outbound)==0):
             node1.stop()
             node2.stop()
             assert True
