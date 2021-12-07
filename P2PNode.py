@@ -37,6 +37,3 @@ class P2PNode(Node):
 
     def node_request_to_stop(self):
         print("node is requested to stop!")
-
-    def create_new_connection(self, connection, id, host, port):
-        return P2PNodeConnection(self, connection, id, host, port)

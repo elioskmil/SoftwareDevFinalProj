@@ -148,10 +148,11 @@ class Window(QMainWindow):
         local_size = self.bSize
         self.lastPoint = QPoint(json_dict['x'], json_dict['y'])
         self.bColor = json_dict['color']
-        self.bSize = int(json_dict['size'])
+        #self.bSize = int(json_dict['size'])
         self.drawUpdate(QMouseEvent(
             QEvent.MouseButtonRelease,
             self.lastPoint,
+            Qt.LeftButton,
             Qt.LeftButton,
             Qt.NoModifier))
         self.bColor = local_color
@@ -214,12 +215,19 @@ class Window(QMainWindow):
         ip, port = target.split(":")
         self.P2PNode.connect_with_node(ip, int(port))
 
-if __name__ == "__main__":
-
+def main():
     MassiveWhiteBoard = QApplication(sys.argv)
-
-    window = Window()
+    host = 'localhost'
+    port = 8000
+    for arg_index in range(len(sys.argv)):
+        if arg_index == 1:
+            host = sys.argv[arg_index]
+        if arg_index == 2:
+            port = int(sys.argv[arg_index])
+    window = Window(host, port)
 
     window.show()
+    MassiveWhiteBoard.exec()
 
-    sys.exit(MassiveWhiteBoard.exec())
+if __name__ == "__main__":
+    main()
