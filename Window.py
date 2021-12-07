@@ -138,10 +138,15 @@ class Window(QMainWindow):
         self.update()
 
     def makeJson(self):
-        return json.dumps({'x': self.lastPoint.x(), 'y': self.lastPoint.y(),
+        jsonDump = json.dumps({'x': self.lastPoint.x(), 'y': self.lastPoint.y(),
                            'color': self.bColor, 'size': self.bSize})
+        #for item in jsonDump:       #debug
+         #   print(item)
+        return jsonDump
 
     def jsonPaint(self, json_dict):
+        #for item in json_dict:
+         #   print(item)
         local_point_x = self.lastPoint.x()
         local_point_y = self.lastPoint.y()
         local_color = self.bColor
